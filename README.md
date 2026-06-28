@@ -53,7 +53,8 @@ docker compose version
 
 > **Screenshot 1:** Take a screenshot showing both version outputs.
 >
-> `[insert screenshot]`
+>  ![Screenshot1](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%201.png)
+
 
 ---
 
@@ -78,7 +79,7 @@ docker images
 > **Screenshot 2:** Take a screenshot showing `docker ps -a` and
 > `docker images` output.
 >
-> `[insert screenshot]`
+> ![Screenshot2](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%202.png)
 
 ### Step 2 – Run an nginx Webserver
 
@@ -160,7 +161,7 @@ exit
 > **Screenshot 3:** Take a screenshot showing the `docker build` output and
 > the commands run inside the container.
 >
-> `[insert screenshot]`
+> ![Screenshot3](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%203.png)
 
 ### Step 4 – Commit
 
@@ -223,7 +224,7 @@ docker exec -it pg psql -U postgres -c "SELECT * FROM test;"
 
 > **Screenshot 4:** Take a screenshot showing the error message.
 >
-> `[insert screenshot]`
+> ![Screenshot4](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%204.png)
 
 ### Questions for Section 3
 
@@ -287,7 +288,7 @@ docker volume inspect pg_data
 > **Screenshot 5:** Take a screenshot showing the `SELECT` result after
 > container recreation, and the `docker volume inspect` output.
 >
-> `[insert screenshot]`
+> ![Screenshot5](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%205.png)
 
 ### Step 3 – Clean Up
 
@@ -336,7 +337,7 @@ docker run --rm -it postgres:16 \
 
 > **Screenshot 6:** Take a screenshot showing the connection error.
 >
-> `[insert screenshot]`
+> ![Screenshot6](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%206.png)
 
 ### Step 2 – Fix It With a Custom Bridge Network
 
@@ -500,7 +501,7 @@ curl http://localhost:8000/studenten
 > **Screenshot 7:** Take a screenshot showing `docker compose ps` and the
 > `curl /` response.
 >
-> `[insert screenshot]`
+> ![Screenshot7](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%207.png)
 
 ### Step 5 – Observe Compose Networking
 
@@ -613,7 +614,7 @@ curl http://localhost:8000/studenten
 > **Screenshot 8:** Take a screenshot showing the `curl /studenten` response
 > with all four rows.
 >
-> `[insert screenshot]`
+> ![Screenshot8](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%208.png)
 
 ### Step 4 – Commit
 
@@ -719,7 +720,7 @@ git push
 > **Screenshot 9:** Take a screenshot showing `git status` confirming
 > `.env` is not staged, and the working `curl` response.
 >
-> `[insert screenshot]`
+> ![Screenshot9](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%209.png)
 
 ### Questions for Section 8
 
@@ -815,7 +816,7 @@ curl http://localhost:8000/studenten
 > **Screenshot 10:** Take a screenshot showing `docker images` with the
 > final image size and the working `curl` response.
 >
-> `[insert screenshot]`
+> ![Screenshot10](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%2010.png)
 
 ### Step 5 – Commit
 
@@ -880,7 +881,7 @@ docker compose exec api whoami
 > **Screenshot 11:** Take a screenshot showing `docker compose exec api whoami`
 > returning `appuser`.
 >
-> `[insert screenshot]`
+> ![Screenshot11](https://github.com/Oryanick/DBMS_08/blob/master/Screenshot%2011.png)
 
 ### Step 3 – Commit
 
