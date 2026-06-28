@@ -109,13 +109,15 @@ docker system df
 **Question 1.1:** The flag `-d` starts the container in detached mode.
 What happens without `-d`, and why is detached mode useful for a web server?
 
-> *Your answer:*
+> *Your answer:* Ohne das -d Flag läuft der Container im Vordergrund, das heißt das Terminal ist direkt an den laufenden Prozess gebunden und ich kann keine weiteren Befehle eingeben, solange der Container aktiv ist. Der gesamte Output des Containers wird direkt im Terminal angezeigt.
+Der Detached Mode startet den Container dagegen im Hintergrund. Das ist besonders sinnvoll für Webserver, weil sie dauerhaft laufen sollen und ich parallel weiterarbeiten kann, ZB: andere Befehle ausführen oder Logs prüfen.
 
 **Question 1.2:** `-p 8080:80` maps host port 8080 to container port 80.
 Which port is the application actually listening on inside the container?
 What would `-p 9000:80` change?
 
-> *Your answer:*
+> *Your answer:* Der Webserver läuft intern im Container auf Port 80. Mit -p 8080:80 wird dieser intern Port auf den Host Port 8080 weitergeleitet. Das bedeutet also, dass man innerhalb des Containers Port 80 haben und auf dem Rechner http://localhost:8080. Wenn ich stattdessen -p 9000:80 verwende, würde die Anwendung dann über http://localhost:9000 erreichbar sein. Der Container selbst bleibt dabei unverändert und hört weiterhin auf Port 80, nur die externe Weiterleitung ändert sich.
+
 
 ---
 
@@ -177,13 +179,13 @@ git push -u origin main
 `apt-get install`, and `rm -rf /var/lib/apt/lists/*` in a single line?
 What would happen to the image size if these were three separate `RUN` lines?
 
-> *Your answer:*
+> *Your answer:*  Die drei Befehle werden in einer einzigen RUN Zeile kombiniert, weil Docker jede RUN Anweisung als eigene Image Schicht speichert. Wenn man also apt-get update, apt-get install und das Aufräumen in getrennte RUN Zeilen schreibt, würden die temporären Paketlisten aus apt-get update in einer eigenen Schicht gespeichert bleiben. Diese bleiben dann im Image erhalten und erhöhen die Größe unnötig. Durch das Zusammenfassen passiert alles in einer einzigen Schicht: installieren und direkt danach den Cache löschen, bevor die Schicht eingefroren wird. Dadurch bleibt das Image deutlich kleiner und sauberer.
 
 **Question 2.2:** `EXPOSE 80` in a Dockerfile does **not** actually open port
 80. What does it do, and what is required at `docker run` time to actually
 forward a port?
 
-> *Your answer:*
+> *Your answer:* EXPOSE 80 öffnet keinen Port wirklich, sondern ist nur eine Art Dokumentation im Image. Es sagt nur, dass die Anwendung im Container Port 80 nutzt. Damit der Dienst wirklich von außen erreichbar ist, muss man beim Start des Containers den Port explizit weiterleiten, ZB: docker run -p 8080:80. Erst dieses -p verbindet den Host Port mit dem Container Port. Ohne -p bleibt der Dienst im Container isoliert und ist von außen nicht erreichbar.
 
 ---
 
@@ -232,13 +234,13 @@ docker exec -it pg psql -U postgres -c "SELECT * FROM test;"
 `postgres:16` still exists on your machine. Why does recreating a container
 from the same image not restore the data?
 
-> *Your answer:*
+> *Your answer:* Die Daten sind nicht im Docker Image gespeichert, sondern im Container Dateisystem zur Laufzeit. Dieses Dateisystem ist jedoch ephemer, das heißt, sobald der Container gelöscht wird, gehen alle darin gespeicherten Daten verloren. Das Image postgres:16 enthält nur die Software und Grundkonfiguration aber keine Laufzeitdatenbank. Deshalb wird beim Neustart eines neuen Containers aus dem gleichen Image eine komplett frische Datenbank ohne vorherige Tabellen erstellt.
 
 **Question 3.2:** `docker stop` sends SIGTERM and waits for the process to
 exit cleanly. `docker kill` sends SIGKILL immediately. Why is `docker stop`
 preferred for a database container?
 
-> *Your answer:*
+> *Your answer:* docker stop wird bevorzugt, weil es dem Prozess erlaubt, sich kontrolliert zu beenden. Dabei wird zuerst ein SIGTERM Signal gesendet, wodurch PostgreSQL noch offene Verbindungen schließen, Transaktionen beenden und Daten sauber auf die Festplatte schreiben kann. docker kill hingegen beendet den Prozess sofort mit SIGKILL, ohne Cleanup. Das kann bei Datenbanken zu Datenverlust oder beschädigten Daten führen. Deshalb ist docker stop für Stateful Services wie Datenbanken die sichere Variante.
 
 ---
 
@@ -303,13 +305,13 @@ docker volume rm pg_data
 the host filesystem. Why is it still recommended to use named volumes instead
 of bind-mounting that path directly with `-v /var/lib/docker/volumes/...`?
 
-> *Your answer:*
+> *Your answer:* Auch wenn docker volume inspect pg_data den konkreten Mountpoint auf dem Host Dateisystem anzeigt, sollte man trotzdem benannte Volumes verwenden, anstatt direkt den Pfad unter /var/lib/docker/volumes/... als Bind-Mount einzubinden. Der wichtigste Grund ist, dass dieser Pfad intern von Docker verwaltet wird und sich je nach System, Docker Version oder Storage Driver ändern kann. Außerdem ist die direkte Arbeit in diesem Verzeichnis nicht empfohlen, da Docker dort selbst Daten organisiert und man durch manuelle Änderungen leicht Inkonsistenzen oder Datenverlust verursachen kann. Benannte Volumes sind dagegen abstrahiert, sicherer und plattformunabhängig, da Docker die Speicherorte automatisch verwaltet und bei Bedarf korrekt an Container bindet.
 
 **Question 4.2:** You want to back up the database. Which `docker` command
 lets you copy files out of a running container, and how would you copy the
 volume contents to a `.tar.gz` archive on the host?
 
-> *Your answer:*
+> *Your answer:* Um Daten aus einem laufenden Container zu sichern, kann der Befehl docker cp verwendet werden. Damit lassen sich Dateien oder Verzeichnisse direkt zwischen Container und Host System kopieren. Für ein PostgreSQL Volume würde ich den Inhalt des Datenverzeichnisses aus dem Container bzw Volume zunächst auf das Host System kopieren und anschließend daraus ein Archiv erstellen. Konkret könnte man beispielsweise mit docker cp pg:/var/lib/postgresql/data ./backup die Daten aus dem Container in ein lokales Backup Verzeichnis kopieren. Danach kann dieses Verzeichnis mit einem Befehl wie tar -czvf backup.tar.gz backup/ auf dem Host in ein komprimiertes Archiv umgewandelt werden. Dadurch entsteht eine vollständige Sicherung der Datenbank, die unabhängig vom Container gespeichert werden kann.
 
 ---
 
@@ -378,13 +380,13 @@ docker volume rm pg_data
 the default bridge. Why can containers on the default bridge **not** resolve
 each other by name, while containers on a user-defined bridge can?
 
-> *Your answer:*
+> *Your answer:* Auf der Standard-Bridge von Docker gibt es keine automatische DNS Auflösung für Containernamen, das heißt Container kennen sich dort nicht über ihre Namen, sondern nur über IP-Adressen. Dadurch kann ein Container den anderen nicht einfach über einen Hostnamen wie pg erreichen. Bei einem benutzerdefinierten Bridge-Netzwerk ist das anders, weil Docker dort automatisch einen internen DNS Server aktiviert, der die Containernamen auf die jeweiligen IP-Adressen auflöst. Deshalb funktioniert dort die Kommunikation über Namen direkt und ohne feste IPs.
 
 **Question 5.2:** You could find the IP address of the `pg` container with
 `docker inspect` and hard-code it. Why is using the container name as a
 hostname strongly preferable?
 
-> *Your answer:*
+> *Your answer:* Die Verwendung der IP-Adresse ist zwar technisch möglich, aber nicht sinnvoll, weil sich die IP-Adresse eines Containers bei jedem Neustart ändern kann. Wenn ich diese IP fest im Code oder in Konfigurationen eintrage, würde die Verbindung schnell kaputtgehen, sobald der Container neu erstellt wird. Der Containernamen ist dagegen stabil und bleibt gleich, solange der Container existiert. In einem benutzerdefinierten Netzwerk übernimmt Docker die Auflösung automatisch, sodass ich einfach den Namen pg verwenden kann und keine festen IPs brauche. Das ist deutlich flexibler und entspricht der typischen Docker Arbeitsweise.
 
 ---
 
@@ -522,6 +524,9 @@ docker compose down -v   # also removes the named volume
 > **Question:** What is the difference between `down` and `down -v`?
 > When would you use each?
 
+> Der Unterschied zwischen docker compose down und docker compose down -v liegt darin, was beim Herunterfahren der Anwendung gelöscht wird. docker compose down stoppt und entfernt nur die Container sowie das zugehörige Netzwerk, die durch Compose erstellt wurden, die Volumes bleiben dabei aber erhalten. Dadurch bleiben persistente Daten ( ZB:Datenbanken) erhalten und können beim nächsten Start wieder verwendet werden. docker compose down -v geht einen Schritt weiter und löscht zusätzlich alle zugehörigen Volumes, also auch die gespeicherten Daten der Datenbank. Dadurch wird die Umgebung komplett sauber rückgesetzt. Man verwendet docker compose down, wenn man die Anwendung nur stoppen oder neu starten möchte, ohne Daten zu verlieren. docker compose down -v nutzt man dagegen, wenn man wirklich alles zurücksetzen will.
+
+
 ### Step 7 – Commit
 
 ```bash
@@ -536,13 +541,14 @@ git push -u origin main
 starts before `api`. Does it guarantee that PostgreSQL is **ready to accept
 connections** when the API starts? What is the correct way to handle this?
 
-> *Your answer:*
+> *Your answer:* depends_on stellt sicher, dass der PostgreSQL Container zuerst gestartet wird, aber es garantiert nicht, dass der Dienst innerhalb des Containers bereits vollständig bereit ist und Verbindungen annimmt. Die API kann also starten, während PostgreSQL noch initialisiert wird, was zu Verbindungsfehlern führen kann. Korrekt handhabt man das, indem man zusätzlich eine Healthcheck Konfiguration im Compose File verwendet oder in der API Retry Mechanismen einbaut, sodass erst verbunden wird, wenn die Datenbank wirklich erreichbar ist.
 
 **Question 6.2:** The `api` service uses `volumes: - ./api:/app` (a bind
 mount). What is the advantage of this during development compared to
 `COPY`-ing the code into an image at build time?
 
-> *Your answer:*
+> *Your answer:* Der Vorteil eines Bind-Mounts ist, dass Änderungen am lokalen Quellcode sofort im Container verfügbar sind, ohne dass das Image neu gebaut werden muss. Dadurch kann ich während der Entwicklung viel schneller arbeiten und Änderungen direkt testen. Beim COPY müsste ich jedes Mal das Image neu bauen, was deutlich langsamer und umständlicher wäre. Deshalb ist Bind-Mount ideal für die Entwicklung, während COPY eher für produktive Builds geeignet ist. 
+
 
 ---
 
@@ -630,13 +636,13 @@ git push
 `init.sql`, and run `docker compose up -d` again. The schema change does
 **not** appear in the database. Why not, and how do you force re-initialisation?
 
-> *Your answer:*
+> *Your answer:* Wenn ich docker compose down ohne -v ausführe, bleibt das Docker Volume für PostgreSQL erhalten. Das bedeutet, dass die Datenbank weiter mit dem bestehenden Datenverzeichnis arbeitet. Das init.sql wird vom Postgres Container nur beim allerersten Initialisieren einer leeren Datenbank ausgeführt. Da das Volume noch existiert, wird das Skript nicht erneut ausgeführt und Änderungen am Schema werden ignoriert. Um die Initialisierung erneut zu erzwingen, muss das Volume gelöscht werden, also docker compose down -v, damit die Datenbank komplett neu erstellt wird und init.sql erneut ausgeführt wird.
 
 **Question 7.2:** `GENERATED ALWAYS AS IDENTITY` is used instead of
 `SERIAL`. What is the practical difference? Which one is the modern
 SQL-standard approach?
 
-> *Your answer:*
+> *Your answer:* SERIAL ist ein älterer PostgreSQL spezifischer Mechanismus, der intern eine Sequenz erstellt und automatisch hochzählt, aber technisch kein echter SQL Standard ist. GENERATED ALWAYS AS IDENTITY ist die moderne und standardkonforme Lösung nach SQL:2011. Der Vorteil ist, dass die Spalte klar als automatisch generierte Identität definiert ist und besser mit anderen Datenbanksystemen kompatibel ist. Außerdem bietet IDENTITY mehr Kontrolle über das Verhalten der Generierung und ist der empfohlene moderne Ansatz gegenüber SERIAL.
 
 ---
 
@@ -729,13 +735,13 @@ git push
 What is the standard practice to document which variables are required
 without committing the actual secrets?
 
-> *Your answer:*
+> *Your answer:* Üblicherweise dokumentiert man die benötigten Umgebungsvariablen über eine separate Beispieldatei wie .env.example oder .env.template, in der nur die Variablennamen enthalten sind, aber keine echten Geheimnisse stehen. Dadurch kann jeder Entwickler sehen, welche Variablen benötigt werden und eine eigene .env Datei lokal erstellen, ohne dass sensible Daten im Repository gespeichert werden.
 
 **Question 8.2:** Even with `.env` excluded from git, the password is still
 stored in plain text on disk. Name one mechanism Docker provides for
 production-grade secret management that avoids plain-text env files entirely.
 
-> *Your answer:*
+> *Your answer:* Docker bietet für Produktionsumgebungen sogenannte Docker Secrets, die speziell für die sichere Verwaltung sensibler Daten wie Passwörter entwickelt wurden. Secrets werden verschlüsselt gespeichert und nur zur Laufzeit in den Container eingebunden sodass sie nicht als Umgebungsvariable im Klartext sichtbar sind. Dieser Mechanismus wird insbesondere in Docker Swarm oder Kubernetes ähnlichen Setups verwendet und ist deutlich sicherer als die Verwendung von .env Dateien.
 
 ---
 
@@ -832,13 +838,13 @@ git push
 environment from the builder stage. The final image does not contain `pip` or
 `uv`. What security advantage does this provide?
 
-> *Your answer:*
+> *Your answer:* Wenn die virtuelle Umgebung aus der Builder Phase ins finale Image kopiert wird, enthält das Runtime Image keine Build Tools wie pip oder uv. Dadurch wird die Angriffsfläche deutlich reduziert, weil potenzielle Werkzeuge zum Nachinstallieren oder Manipulieren von Paketen im laufenden Container nicht mehr vorhanden sind. Das Image enthält nur die tatsächlich benötigten Laufzeit Abhängigkeiten, was es sicherer und kontrollierter macht, da weniger Komponenten für Missbrauch oder Supply-Chain-Angriffe zur Verfügung stehen.
 
 **Question 9.2:** The builder stage installs dependencies from `pyproject.toml`
 before copying the application code. Why does this ordering improve build
 cache efficiency when you frequently change only `main.py`?
 
-> *Your answer:*
+> *Your answer:* Die Reihenfolge verbessert den Docker-Build-Cache, weil pyproject.toml zuerst kopiert und die Abhängigkeiten installiert werden, bevor der eigentliche Anwendungscode ( main.py usw..) ins Image kommt. Wenn sich später nur der Code ändert aber die Dependencies gleich bleiben, kann Docker den Schritt mit uv sync aus dem Cache wiederverwenden. Dadurch muss nicht jedes Mal alles neu installiert werden, was den Build deutlich schneller und effizienter macht, besonders bei häufigen Codeänderungen.
 
 ---
 
@@ -896,13 +902,13 @@ git push
 **Question 10.1:** The `USER appuser` instruction is placed after
 `COPY . .`. Why would placing it *before* `COPY` cause a permission problem?
 
-> *Your answer:*
+> *Your answer:* Wenn USER appuser vor COPY . . . stehen würde, hätte der Benutzer appuser noch keine Schreibrechte oder Besitzrechte an den Zielverzeichnissen im Container. Da der COPY Befehl dann mit diesem nicht root Benutzer ausgeführt wird, könnten Dateien nicht korrekt kopiert oder erstellt werden. Dadurch entstehen Permission Errors oder unvollständige Builds.
 
 **Question 10.2:** State the **Principle of Least Privilege** in one
 sentence, and name one other place in a typical web application stack
 (outside of containers) where this principle is applied.
 
-> *Your answer:*
+> *Your answer:* Das Prinzip der minimalen Rechtevergabe besagt, dass ein Benutzer oder Dienst nur die Rechte erhalten soll, die er unbedingt für seine Aufgabe benötigt. Dadurch wird die Angriffsfläche reduziert und die Sicherheit erhöht. Ein Beispiel außerhalb von Containern ist ein Datenbankbenutzer, der nur SELECT oder INSERT Rechte auf bestimmte Tabellen besitzt und keine administrativen Rechte auf das gesamte System hat.
 
 ---
 
@@ -913,19 +919,19 @@ Section 6 of the lecture shows a Dockerfile that runs both PostgreSQL and
 FastAPI in a single container. Describe two concrete operational problems
 this causes in a production environment.
 
-> *Your answer:*
+> *Your answer:* Wenn PostgreSQL und FastAPI im selben Container laufen, entstehen zwei konkrete Probleme: Erstens ist die Skalierung nicht möglich, da Datenbank und API nur gemeinsam gestartet oder gestoppt werden können. Zweitens wird das Monitoring und die Fehlerdiagnose schwieriger weil Logs und Prozesse nicht sauber getrennt sind und ein Fehler beide Dienste gleichzeitig beeinträchtigen kann.
 
 **Question B – Volume vs. Bind Mount:**  
 Compare named volumes and bind mounts. When is each type appropriate?
 
-> *Your answer:*
+> *Your answer:* Benannte Volumes werden vom Docker Engine verwaltet und eignen sich gut für persistente Daten wie Datenbanken in Produktionsumgebungen, da sie unabhängig vom Host Dateisystem sind. Bind Mounts hingegen verbinden ein Verzeichnis vom Host direkt mit dem Container und sind besonders für die Entwicklung geeignet weil Änderungen am Code sofort sichtbar sind.
 
 **Question C – Compose and Reproducibility:**  
 A colleague says: "I can just write the `docker run` commands in a shell
 script — why do I need `docker-compose.yml`?" Give two specific advantages
 of Compose over a shell script of `docker run` commands.
 
-> *Your answer:*
+> *Your answer:* Docker Compose bietet eine deklarative Struktur in der alle Dienste, Netzwerke und Volumes zentral in einer YAML Datei definiert werden, wodurch die Konfiguration einfacher wartbar und reproduzierbar wird. Außerdem verwaltet Compose automatisch Abhängigkeiten, Netzwerke und Startreihenfolgen, was mit reinen docker run Skripten deutlich fehleranfälliger ist.
 
 **Question D – The Complete Chain:**  
 You have now built and containerised the full stack: PostgreSQL in a
@@ -934,7 +940,7 @@ non-root image → both orchestrated by Docker Compose with credentials
 in `.env`. Describe in two sentences what each layer contributes to
 **portability** and **security**.
 
-> *Your answer:*
+> *Your answer:* PostgreSQL wird in einem isolierten Container mit persistentem Volume betrieben und durch ein Init Skript automatisch initialisiert, was Datenpersistenz und Reproduzierbarkeit gewährleistet. FastAPI läuft in einem schlanken, nicht root Container und wird über Docker Compose zusammen mit der Datenbank orchestriert, wobei .env Dateien die sichere und portable Konfiguration der Zugangsdaten ermöglichen.
 
 ---
 
