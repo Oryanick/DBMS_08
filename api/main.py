@@ -1,3 +1,4 @@
+import os
 import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI
@@ -5,10 +6,10 @@ from fastapi import FastAPI
 app = FastAPI(title="Studenten-API")
 
 DB_CONFIG = {
-    "dbname": "vorlesung",
-    "user": "vorlesung",
-    "password": "geheim",
-    "host": "postgres",   # container name as hostname
+    "dbname": os.environ.get("POSTGRES_DB", "vorlesung"),
+    "user": os.environ.get("POSTGRES_USER", "vorlesung"),
+    "password": os.environ.get("POSTGRES_PASSWORD", ""),
+    "host": "postgres",
     "port": 5432,
 }
 
